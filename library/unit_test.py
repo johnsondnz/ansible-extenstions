@@ -29,7 +29,7 @@ description:
     - "Custom module to decern pass/fail of a specified test and return as ansible facts."
 options:
     fact_name: Desired fact name, auto prepended with 'unit_test_'
-    data: JSON data to iterate over
+    data: JSON key,value data to iterate over - strings not accepted at this time
     condition: condition that must be met to 'PASS'
     key: the key to check either exists or value is present
     search: value to look for
@@ -49,12 +49,33 @@ EXAMPLE = '''
     data: "{{getter_system_alarms}}"
     condition: key-exists
 
-ansible_fact:
-"unit_test_system_alarms": {
-  "test_result": "[PASS]",
-  "test_name": "System",
-  "test_description": "Check for alarms"
-}
+"ansible_facts": {
+    "unit_test_system_alarms": {
+    "test_result": "[PASS]",
+    "test_name": "System",
+    "test_description": "Check for alarms"
+    }
+},
+
+- set_fact: test_name=Software
+- name: "SRX550 {{test_name}} Check"
+  unit_test:
+    fact_name: software_version
+    test_name: "{{test_name}}"
+    description: Check for correct version
+    key: os_version
+    search: "{{srx550_software_ver}}"
+    data: "{{napalm_facts}}"
+    condition: value-exists
+  when: "'SRX550' in napalm_model"
+
+"ansible_facts": {
+    "unit_test_software_version": {
+        "test_description": "Check for correct version",
+        "test_name": "Software",
+        "test_result": "[PASS]"
+    }
+},
 
 '''
 
@@ -73,7 +94,8 @@ def main():
         fact_name=dict(type='str', required=True),
         test_name=dict(type='str', required=True),
         data=dict(type='dict', required=True),
-        condition=dict(type='str', required=True, choices=['key-exists']),
+        condition=dict(type='str', required=True, choices=[
+                       'key-exists', 'value-exists']),
         key=dict(type='str', required=False),
         search=dict(type='str', required=False),
         description=dict(type='str', required=True),
@@ -99,12 +121,20 @@ def main():
 
     # Run the unit test
     # currently supports single route-engine and no loops
-	# more is planned to iterate and search recursively
+    # more is planned to iterate and search recursively
     new_facts = {}
-    for key, item in data.items():
-        if condition == 'key-exists':
-            for k, v in data.items():
-                if key in k:
+    if condition == 'key-exists':
+        for k, v in data.items():
+            if key in k:
+                test_result = '[PASS]'
+            else:
+                test_result = '[FAIL]'
+
+    if condition == 'value-exists':
+        # test for dictionary
+        for k, v in data.items():
+            if key in k:
+                if search in v:
                     test_result = '[PASS]'
                 else:
                     test_result = '[FAIL]'
