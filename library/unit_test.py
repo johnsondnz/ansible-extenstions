@@ -80,10 +80,12 @@ EXAMPLE = '''
 '''
 
 RETURN = '''
+
 ansible_facts:
     description: "Facts based on test conditions"
     returned: PASS / FAIL
     type: dict
+
 '''
 
 
@@ -131,7 +133,6 @@ def main():
                 test_result = '[FAIL]'
 
     if condition == 'value-exists':
-        # test for dictionary
         for k, v in data.items():
             if key in k:
                 if search in v:
