@@ -49,17 +49,19 @@ EXAMPLE = '''
     data: "{{getter_system_alarms}}"
     condition: key-exists
 
+ansible_fact:
+"unit_test_system_alarms": {
+  "test_result": "[PASS]",
+  "test_name": "System",
+  "test_description": "Check for alarms"
+}
+
 '''
 
 RETURN = '''
-changed:
-    description: "whether the command has been executed on the device"
-    returned: always
-    type: bool
-    sample: True
 ansible_facts:
-    description: "Facts gathered on the device provided via C(ansible_facts)"
-    returned: certain keys are returned depending on filter
+    description: "Facts based on test conditions"
+    returned: PASS / FAIL
     type: dict
 '''
 
@@ -106,15 +108,16 @@ def main():
                     test_result = '[PASS]'
                 else:
                     test_result = '[FAIL]'
-                new_facts = {
-                    # prepend unit_test_ to all facts
-                    'unit_test_' + fact_name: {
-                        'test_name': test_name,
-                        'test_description': description,
-                        'test_result': test_result
-                    }
-                }
 
+    # Create facts object
+    new_facts = {
+        # prepend unit_test_ to all facts
+        'unit_test_' + fact_name: {
+            'test_name': test_name,
+            'test_description': description,
+            'test_result': test_result
+        }
+    }
     # Prep the ansible_facts
     results = {'ansible_facts': new_facts}
 
